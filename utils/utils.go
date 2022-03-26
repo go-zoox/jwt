@@ -1,61 +1,86 @@
 package utils
 
-type Map map[string]interface{}
+type Value struct {
+	Data map[string]interface{}
+	key  string
+}
 
-func (m Map) Get(key string) *MapValue {
-	return &MapValue{
-		v: m[key],
+func NewValue() *Value {
+	return &Value{
+		Data: make(map[string]interface{}),
 	}
 }
 
-func (m Map) Set(key string, value interface{}) {
-	m[key] = value
-}
-
-func (m Map) CopyTo(dst Map) {
-	for k, v := range m {
-		dst[k] = v
+func (v *Value) Get(key string) *Value {
+	return &Value{
+		Data: v.Data,
+		key:  key,
 	}
 }
 
-type MapValue struct {
-	v interface{}
+func (v *Value) Set(key string, value interface{}) {
+	v.Data[key] = value
 }
 
-func (mv *MapValue) String() string {
-	if v, ok := mv.v.(string); ok {
+func (v *Value) Has(key string) bool {
+	_, ok := v.Data[key]
+	return ok
+}
+
+func (v *Value) String() string {
+	if v.key == "" {
+		panic("call Get(key) first")
+	}
+
+	if v, ok := v.Data[v.key].(string); ok {
 		return v
 	}
 
 	return ""
 }
 
-func (mv *MapValue) Int64() int64 {
-	if v, ok := mv.v.(int64); ok {
+func (v *Value) Int64() int64 {
+	if v.key == "" {
+		panic("call Get(key) first")
+	}
+
+	if v, ok := v.Data[v.key].(int64); ok {
 		return v
 	}
 
-	return int64(mv.Float64())
+	return int64(v.Float64())
 }
 
-func (mv *MapValue) Int() int {
-	if v, ok := mv.v.(int); ok {
+func (v *Value) Int() int {
+	if v.key == "" {
+		panic("call Get(key) first")
+	}
+
+	if v, ok := v.Data[v.key].(int); ok {
 		return v
 	}
 
 	return 0
 }
 
-func (mv *MapValue) Bool() bool {
-	if v, ok := mv.v.(bool); ok {
+func (v *Value) Bool() bool {
+	if v.key == "" {
+		panic("call Get(key) first")
+	}
+
+	if v, ok := v.Data[v.key].(bool); ok {
 		return v
 	}
 
 	return false
 }
 
-func (mv *MapValue) Float64() float64 {
-	if v, ok := mv.v.(float64); ok {
+func (v *Value) Float64() float64 {
+	if v.key == "" {
+		panic("call Get(key) first")
+	}
+
+	if v, ok := v.Data[v.key].(float64); ok {
 		return v
 	}
 

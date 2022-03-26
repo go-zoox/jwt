@@ -25,7 +25,7 @@ type Payload struct {
 	// The unique token identifier
 	JwtID string `json:"jti,omitempty"`
 	// Custom claims
-	custom utils.Map
+	custom *utils.Value
 }
 
 // New Claim return a new map representing the claims with the default values. The schema is detailed below.
@@ -38,7 +38,7 @@ type Payload struct {
 //  claim["jti"] JWT ID     - string  - case sensitive unique identifier of the token even among different issuers;
 func NewPayload() *Payload {
 	return &Payload{
-		custom: make(utils.Map),
+		custom: utils.NewValue(),
 	}
 }
 
@@ -48,14 +48,13 @@ func (p *Payload) Set(key string, value interface{}) {
 }
 
 // Get returns the claim in string form and returns an error if the specified claim doesnot exist.
-func (p *Payload) Get(key string) *utils.MapValue {
+func (p *Payload) Get(key string) *utils.Value {
 	return p.custom.Get(key)
 }
 
 // HasClaim returns if the claims map has the specified key.
 func (p *Payload) Has(key string) bool {
-	_, ok := p.custom[key]
-	return ok
+	return p.custom.Has(key)
 }
 
 // Encode returns an encoded JWT token payload
@@ -65,7 +64,7 @@ func (p *Payload) Encode() (string, error) {
 		issuedAt = time.Now().Unix()
 	}
 
-	data := utils.Map{
+	data := map[string]interface{}{
 		"iat": issuedAt,
 		"exp": p.ExpiresAt,
 		"nbf": p.NotBefore,
@@ -74,7 +73,9 @@ func (p *Payload) Encode() (string, error) {
 		"sub": p.Subject,
 		"jti": p.JwtID,
 	}
-	p.custom.CopyTo(data)
+	for k, v := range p.custom.Data {
+		data[k] = v
+	}
 
 	jsonData, err := json.Marshal(data)
 	if err != nil {
@@ -87,14 +88,14 @@ func (p *Payload) Encode() (string, error) {
 
 // Decode decodes the JWT token payload
 func (p *Payload) Decode(encoded string) error {
-	data := make(utils.Map)
+	data := utils.NewValue()
 
 	jsonData, err := base64.RawURLEncoding.DecodeString(encoded)
 	if err != nil {
 		return err
 	}
 
-	err = json.Unmarshal(jsonData, &data)
+	err = json.Unmarshal(jsonData, &data.Data)
 	if err != nil {
 		return errors.New("unable to unmarshal payload:" + err.Error())
 	}

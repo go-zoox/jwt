@@ -83,7 +83,7 @@ func (j *Jwt) Set(key string, value interface{}) {
 	j.payload.Set(key, value)
 }
 
-func (j *Jwt) Get(key string) *utils.MapValue {
+func (j *Jwt) Get(key string) *utils.Value {
 	return j.payload.Get(key)
 }
 
