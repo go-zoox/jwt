@@ -51,6 +51,10 @@ func (j *Jwt) Sign() (string, error) {
 
 func (j *Jwt) Verify(token string) error {
 	components := strings.Split(token, ".")
+	if len(components) != 3 {
+		return errors.New("invalid token (invalid format)")
+	}
+
 	header, payload, signature := components[0], components[1], components[2]
 
 	text := header + "." + payload
