@@ -1,2 +1,10 @@
+github.com/go-zoox/core-utils v1.1.0 h1:PlNGm/MqC7ph5UtC1/IRu+mdELzpAqEYEamz+1jnoKI=
+github.com/go-zoox/core-utils v1.1.0/go.mod h1:EknM3KLL6/kagL95wZbWE7mRRcYCG/fHqiJ/EH0ihAs=
+github.com/go-zoox/crypto v1.1.8 h1:oI2KPLy+SsGeb+h5A99n9MTQVp4jBhwJWkqjStUzz9I=
+github.com/go-zoox/crypto v1.1.8/go.mod h1:JqgNr9HcFFGQkMCGLJ9djtfg/RWVLxtunG01HD3lUXM=
+github.com/go-zoox/testify v1.0.0 h1:zXuj+JMcudM/dWk8HgMfCKpGYDcyHbTUBGxH35SGubU=
+github.com/go-zoox/testify v1.0.0/go.mod h1:6+UZ2gOcwcnUvR5lclGRnLrE3/mLoQMAGExjrZgs3aA=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
+github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31 h1:OXcKh35JaYsGMRzpvFkLv/MEyPuL49CThT1pZ8aSml4=
+github.com/ttacon/chalk v0.0.0-20160626202418-22c06c80ed31/go.mod h1:onvgF043R+lC5RZ8IT9rBXDaEDnpnw/Cl+HFiw+v/7Q=

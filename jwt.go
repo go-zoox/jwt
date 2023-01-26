@@ -1,153 +1,201 @@
 package jwt
 
-import (
-	"encoding/base64"
-	"strings"
-	"time"
+import typ "github.com/go-zoox/core-utils/type"
 
-	"github.com/go-zoox/jwt/utils"
-	"github.com/pkg/errors"
-)
+// Options is the options for jwt
+type Options struct {
+	// Issuer is the people or entity who issued the token.
+	Issuer string `json:"iss"`
 
-// Jwt contains the header and payload of the JWT.
-type Jwt struct {
-	header  *Header
-	payload *Payload
+	// Subject is the subject of the token.
+	Subject string `json:"sub"`
+
+	// Audience is the people or entity who used the token.
+	Audience string `json:"aud"`
+
+	// ExpiresAt is the time when the token expires.
+	ExpiresAt int64 `json:"exp"`
+
+	// NotBefore is the time when the token was valid.
+	NotBefore int64 `json:"nbf"`
+
+	// IssuedAt is the time when the token was issued.
+	IssuedAt int64 `json:"iat"`
+
+	// JwtID is the unique token identifier.
+	JwtID string `json:"jti"`
+
+	// Algorithm is the jwt crypto algorithm.
+	Algorithm string `json:"alg"`
+}
+
+// Jwt is the jwt
+type Jwt interface {
+	Sign(payload map[string]interface{}) (string, error)
+	Verify(token string) (*typ.Value, error)
 	//
-	algorithm *Algorithm
+	Get(key string) *typ.Value
+	// Set(key string, value interface{})
+	// Getter & Setter
+	SetIssuer(iss string)
+	GetIssuer() string
+	SetSubject(sub string)
+	GetSubject() string
+	SetAudience(aud string)
+	GetAudience() string
+	SetNotBefore(nbf int64)
+	GetNotBefore() int64
+	SetExpiresAt(exp int64)
+	GetExpiresAt() int64
+	SetIssuedAt(iat int64)
+	GetIssuedAt() int64
+	SetJwtID(jti string)
+	GetJwtID() string
+	SetAlgorithm(alg string)
+	GetAlgorithm() string
 }
 
-func New(secret string, createHash func(secret string) *Algorithm) *Jwt {
-	algorithm := createHash(secret)
-	header := NewHeader(algorithm.Name)
-	payload := NewPayload()
+type jwt struct {
+	secret  string
+	options *Options
+	//
+	header  *Header
+	payload *typ.Value
+}
 
-	return &Jwt{
-		header:    header,
-		payload:   payload,
-		algorithm: algorithm,
+// New creates a new JWT
+func New(secret string, options ...*Options) Jwt {
+	opt := &Options{}
+	if len(options) > 0 && options[0] != nil {
+		opt = options[0]
+	}
+
+	return &jwt{
+		secret:  secret,
+		options: opt,
 	}
 }
 
-func (j *Jwt) Sign() (string, error) {
-	header, err := j.header.Encode()
+// Sign signs data with secret
+func (j *jwt) Sign(payload map[string]interface{}) (string, error) {
+	return Sign(j.secret, payload, &SignOptions{
+		Issuer:    j.options.Issuer,
+		Subject:   j.options.Subject,
+		Audience:  j.options.Audience,
+		ExpiresAt: j.options.ExpiresAt,
+		NotBefore: j.options.NotBefore,
+		IssuedAt:  j.options.IssuedAt,
+		JWTID:     j.options.JwtID,
+		Algorithm: j.options.Algorithm,
+	})
+}
+
+// Verify verifies data with secret
+func (j *jwt) Verify(token string) (*typ.Value, error) {
+	header, payload, err := Verify(j.secret, token, &VerifyOptions{
+		Issuer:    j.options.Issuer,
+		Subject:   j.options.Subject,
+		Audience:  j.options.Audience,
+		ExpiresAt: j.options.ExpiresAt,
+		NotBefore: j.options.NotBefore,
+		IssuedAt:  j.options.IssuedAt,
+		JWTID:     j.options.JwtID,
+	})
 	if err != nil {
-		return "", errors.Wrap(err, "unable to encode header")
+		return nil, err
 	}
 
-	payload, err := j.payload.Encode()
-	if err != nil {
-		return "", errors.Wrap(err, "unable to encode payload")
-	}
+	j.header = header
+	j.payload = payload
 
-	signatureBytes, err := j.algorithm.Sign([]byte(header + "." + payload))
-	if err != nil {
-		return "", errors.Wrap(err, "unable to sign")
-	}
-
-	signature := base64.RawURLEncoding.EncodeToString(signatureBytes)
-	return header + "." + payload + "." + signature, nil
+	return j.payload, nil
 }
 
-func (j *Jwt) Verify(token string) error {
-	components := strings.Split(token, ".")
-	if len(components) != 3 {
-		return errors.New("invalid token (invalid format)")
-	}
-
-	header, payload, signature := components[0], components[1], components[2]
-
-	text := header + "." + payload
-	ok, err := j.algorithm.Verify([]byte(text), []byte(signature))
-	if !ok {
-		return errors.Wrap(err, "unable to sign token")
-	}
-
-	if err := j.header.Decode(header); err != nil {
-		return errors.Wrap(err, "invalid token, unable to decode header")
-	}
-
-	if err := j.payload.Decode(payload); err != nil {
-		return errors.Wrap(err, "invalid token, unable to decode payload")
-	}
-
-	if j.payload.IssuedAt == 0 {
-		return errors.New("invalid token, issued at missing")
-	}
-
-	if expiresAt := j.payload.ExpiresAt; expiresAt > 0 && expiresAt < time.Now().Unix() {
-		return errors.New("token expired")
-	}
-
-	return nil
-}
-
-//
-func (j *Jwt) Set(key string, value interface{}) {
-	j.payload.Set(key, value)
-}
-
-func (j *Jwt) Get(key string) *utils.Value {
+// Get ...
+func (j *jwt) Get(key string) *typ.Value {
 	return j.payload.Get(key)
 }
 
-func (j *Jwt) Has(key string) bool {
-	return j.payload.Has(key)
+// // Set ...
+// func (j *jwt) Set(key string) *typ.Value {
+// 	return j.payload.Get(key)
+// }
+
+// SetIssuer sets issuer
+func (j *jwt) SetIssuer(iss string) {
+	j.options.Issuer = iss
 }
 
-//
-func (j *Jwt) GetIssuedAt() int64 {
-	return j.payload.IssuedAt
+// GetIssuer ...
+func (j *jwt) GetIssuer() string {
+	return j.payload.Get("iss").String()
 }
 
-func (j *Jwt) SetIssuedAt(t int64) {
-	j.payload.IssuedAt = t
+// SetSubject sets subject
+func (j *jwt) SetSubject(sub string) {
+	j.options.Subject = sub
 }
 
-func (j *Jwt) GetExpiresAt() int64 {
-	return j.payload.ExpiresAt
+// GetSubject ...
+func (j *jwt) GetSubject() string {
+	return j.payload.Get("sub").String()
 }
 
-func (j *Jwt) SetExpiresAt(t int64) {
-	j.payload.ExpiresAt = t
+// SetAudience sets audience
+func (j *jwt) SetAudience(aud string) {
+	j.options.Audience = aud
 }
 
-func (j *Jwt) GetNotBefore() int64 {
-	return j.payload.NotBefore
+// GetAudience ...
+func (j *jwt) GetAudience() string {
+	return j.payload.Get("aud").String()
 }
 
-func (j *Jwt) SetNotBefore(t int64) {
-	j.payload.NotBefore = t
+// SetNotBefore sets not before
+func (j *jwt) SetNotBefore(nbf int64) {
+	j.options.NotBefore = nbf
 }
 
-func (j *Jwt) GetIssuer() string {
-	return j.payload.Issuer
+// GetNotBefore ...
+func (j *jwt) GetNotBefore() int64 {
+	return j.payload.Get("nbf").Int64()
 }
 
-func (j *Jwt) SetIssuer(s string) {
-	j.payload.Issuer = s
+// SetExpiresAt sets expires at
+func (j *jwt) SetExpiresAt(exp int64) {
+	j.options.ExpiresAt = exp
 }
 
-func (j *Jwt) GetAudience() string {
-	return j.payload.Audience
+// GetExpiresAt ...
+func (j *jwt) GetExpiresAt() int64 {
+	return j.payload.Get("exp").Int64()
 }
 
-func (j *Jwt) SetAudience(s string) {
-	j.payload.Audience = s
+// SetIssuedAt sets issued at
+func (j *jwt) SetIssuedAt(iat int64) {
+	j.options.IssuedAt = iat
 }
 
-func (j *Jwt) GetSubject() string {
-	return j.payload.Subject
+// GetIssuedAt ...
+func (j *jwt) GetIssuedAt() int64 {
+	return j.payload.Get("iat").Int64()
 }
 
-func (j *Jwt) SetSubject(s string) {
-	j.payload.Subject = s
+// SetJwtID sets jwt id
+func (j *jwt) SetJwtID(jti string) {
+	j.options.JwtID = jti
 }
 
-func (j *Jwt) GetJwtID() string {
-	return j.payload.JwtID
+func (j *jwt) GetJwtID() string {
+	return j.payload.Get("jti").String()
 }
 
-func (j *Jwt) SetJwtID(s string) {
-	j.payload.JwtID = s
+// SetAlgorithm sets algorithm
+func (j *jwt) SetAlgorithm(alg string) {
+	j.options.Algorithm = alg
+}
+
+// GetAlgorithm ...
+func (j *jwt) GetAlgorithm() string {
+	return j.header.Algorithm
 }
