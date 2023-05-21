@@ -30,7 +30,7 @@ func Sign(secret string, payload map[string]any, options ...*SignOptions) (strin
 
 	headerX := Header{
 		Type:      "JWT",
-		Algorithm: "HS256",
+		Algorithm: AlgHS256,
 	}
 
 	payloadX := map[string]interface{}{
@@ -94,11 +94,11 @@ func Sign(secret string, payload map[string]any, options ...*SignOptions) (strin
 
 	var signature string
 	switch headerX.Algorithm {
-	case "HS256":
+	case AlgHS256:
 		signature = hmac.Sha256(secret, headerBase64+"."+payloadBase64, "base64")
-	case "HS384":
+	case AlgHS384:
 		signature = hmac.Sha384(secret, headerBase64+"."+payloadBase64, "base64")
-	case "HS512":
+	case AlgHS512:
 		signature = hmac.Sha512(secret, headerBase64+"."+payloadBase64, "base64")
 	default:
 		return "", fmt.Errorf("unsupported algorithm: %s", headerX.Algorithm)

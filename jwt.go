@@ -37,21 +37,21 @@ type Jwt interface {
 	Get(key string) *typ.Value
 	// Set(key string, value interface{})
 	// Getter & Setter
-	SetIssuer(iss string)
+	SetIssuer(iss string) *jwt
 	GetIssuer() string
-	SetSubject(sub string)
+	SetSubject(sub string) *jwt
 	GetSubject() string
-	SetAudience(aud string)
+	SetAudience(aud string) *jwt
 	GetAudience() string
-	SetNotBefore(nbf int64)
+	SetNotBefore(nbf int64) *jwt
 	GetNotBefore() int64
-	SetExpiresAt(exp int64)
+	SetExpiresAt(exp int64) *jwt
 	GetExpiresAt() int64
-	SetIssuedAt(iat int64)
+	SetIssuedAt(iat int64) *jwt
 	GetIssuedAt() int64
-	SetJwtID(jti string)
+	SetJwtID(jti string) *jwt
 	GetJwtID() string
-	SetAlgorithm(alg string)
+	SetAlgorithm(alg string) *jwt
 	GetAlgorithm() string
 }
 
@@ -122,8 +122,9 @@ func (j *jwt) Get(key string) *typ.Value {
 // }
 
 // SetIssuer sets issuer
-func (j *jwt) SetIssuer(iss string) {
+func (j *jwt) SetIssuer(iss string) *jwt {
 	j.options.Issuer = iss
+	return j
 }
 
 // GetIssuer ...
@@ -132,8 +133,9 @@ func (j *jwt) GetIssuer() string {
 }
 
 // SetSubject sets subject
-func (j *jwt) SetSubject(sub string) {
+func (j *jwt) SetSubject(sub string) *jwt {
 	j.options.Subject = sub
+	return j
 }
 
 // GetSubject ...
@@ -142,8 +144,9 @@ func (j *jwt) GetSubject() string {
 }
 
 // SetAudience sets audience
-func (j *jwt) SetAudience(aud string) {
+func (j *jwt) SetAudience(aud string) *jwt {
 	j.options.Audience = aud
+	return j
 }
 
 // GetAudience ...
@@ -152,8 +155,9 @@ func (j *jwt) GetAudience() string {
 }
 
 // SetNotBefore sets not before
-func (j *jwt) SetNotBefore(nbf int64) {
+func (j *jwt) SetNotBefore(nbf int64) *jwt {
 	j.options.NotBefore = nbf
+	return j
 }
 
 // GetNotBefore ...
@@ -162,8 +166,9 @@ func (j *jwt) GetNotBefore() int64 {
 }
 
 // SetExpiresAt sets expires at
-func (j *jwt) SetExpiresAt(exp int64) {
+func (j *jwt) SetExpiresAt(exp int64) *jwt {
 	j.options.ExpiresAt = exp
+	return j
 }
 
 // GetExpiresAt ...
@@ -172,8 +177,9 @@ func (j *jwt) GetExpiresAt() int64 {
 }
 
 // SetIssuedAt sets issued at
-func (j *jwt) SetIssuedAt(iat int64) {
+func (j *jwt) SetIssuedAt(iat int64) *jwt {
 	j.options.IssuedAt = iat
+	return j
 }
 
 // GetIssuedAt ...
@@ -182,8 +188,9 @@ func (j *jwt) GetIssuedAt() int64 {
 }
 
 // SetJwtID sets jwt id
-func (j *jwt) SetJwtID(jti string) {
+func (j *jwt) SetJwtID(jti string) *jwt {
 	j.options.JwtID = jti
+	return j
 }
 
 func (j *jwt) GetJwtID() string {
@@ -191,8 +198,9 @@ func (j *jwt) GetJwtID() string {
 }
 
 // SetAlgorithm sets algorithm
-func (j *jwt) SetAlgorithm(alg string) {
+func (j *jwt) SetAlgorithm(alg string) *jwt {
 	j.options.Algorithm = alg
+	return j
 }
 
 // GetAlgorithm ...
