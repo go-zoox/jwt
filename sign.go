@@ -33,9 +33,16 @@ func Sign(secret string, payload map[string]any, options ...*SignOptions) (strin
 		Algorithm: AlgHS256,
 	}
 
+	now := time.Now().Unix()
+	// issuedAt default now
+	issuedAt := now
+	// expiredAt default 2 hour
+	expiredAt := now + 7200
+
 	payloadX := map[string]interface{}{
 		"iss": "go-zoox",
-		"iat": time.Now().Unix(),
+		"iat": issuedAt,
+		"exp": expiredAt,
 	}
 
 	if opt != nil {
