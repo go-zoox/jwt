@@ -62,13 +62,17 @@ func Verify(secret string, token string, options ...*VerifyOptions) (header *Hea
 		}
 	}
 
-	expiredAt, err := payloadX.Get("exp").Float64E()
-	if err != nil {
-		return nil, nil, fmt.Errorf("invalid expiredAt: %s", err)
-	}
-	now := time.Now().Unix()
-	if expiredAt < float64(now) {
-		return nil, nil, fmt.Errorf("token expired")
+	expiredAt := payloadX.Get("exp")
+	if expiredAt != nil {
+		expiredAtFloat64, err := expiredAt.Float64E()
+		if err != nil {
+			return nil, nil, fmt.Errorf("invalid expiredAt: %s", err)
+		}
+
+		now := time.Now().Unix()
+		if expiredAtFloat64 < float64(now) {
+			return nil, nil, fmt.Errorf("token expired")
+		}
 	}
 
 	return headerX, payloadX, nil
