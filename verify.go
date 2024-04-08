@@ -62,9 +62,8 @@ func Verify(secret string, token string, options ...*VerifyOptions) (header *Hea
 		}
 	}
 
-	expiredAt := payloadX.Get("exp")
-	if expiredAt != nil {
-		expiredAtFloat64, err := expiredAt.Float64E()
+	if payloadX.Has("exp") {
+		expiredAtFloat64, err := payloadX.Get("exp").Float64E()
 		if err != nil {
 			return nil, nil, fmt.Errorf("invalid expiredAt: %s", err)
 		}
