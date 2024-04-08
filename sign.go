@@ -38,11 +38,9 @@ func Sign(secret string, payload map[string]any, options ...*SignOptions) (strin
 	issuedAt := now
 	// expiredAt default 2 hour
 	expiredAt := now + 7200
-
+	//
 	payloadX := map[string]interface{}{
 		"iss": "go-zoox",
-		"iat": issuedAt,
-		"exp": expiredAt,
 	}
 
 	if opt != nil {
@@ -62,24 +60,26 @@ func Sign(secret string, payload map[string]any, options ...*SignOptions) (strin
 			payloadX["aud"] = opt.Audience
 		}
 
-		if opt.ExpiresAt > 0 {
-			payloadX["exp"] = opt.ExpiresAt
-		}
-
 		if opt.NotBefore > 0 {
 			payloadX["nbf"] = opt.NotBefore
-		}
-
-		if opt.IssuedAt > 0 {
-			payloadX["iat"] = opt.IssuedAt
-		} else {
-			payloadX["iat"] = time.Now().Unix()
 		}
 
 		if opt.JWTID != "" {
 			payloadX["jti"] = opt.JWTID
 		}
+
+		if opt.IssuedAt > 0 {
+			issuedAt = opt.IssuedAt
+			expiredAt = issuedAt + 7200
+		}
+
+		if opt.ExpiresAt > 0 {
+			expiredAt = opt.ExpiresAt
+		}
 	}
+
+	payloadX["iat"] = issuedAt
+	payloadX["exp"] = expiredAt
 
 	// user data first
 	for k, v := range payload {

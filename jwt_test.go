@@ -8,7 +8,8 @@ import (
 
 func TestJWT(t *testing.T) {
 	j := New("secret", &Options{
-		IssuedAt: 1663218578,
+		IssuedAt:  1663218578,
+		ExpiresAt: 2663225778,
 	})
 
 	token, err := j.Sign(map[string]interface{}{
@@ -20,7 +21,7 @@ func TestJWT(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	testify.Equal(t, "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdmF0YXIiOiJodHRwczovL2F2YXRhcnMuZ2l0aHVidXNlcmNvbnRlbnQuY29tL3UvNzQ2MzY4Nz92PTQiLCJpYXQiOjE2NjMyMTg1NzgsImlkIjoxLCJpc3MiOiJnby16b294Iiwibmlja25hbWUiOiJaZXJvIn0.fcJD66GgF-k2JgfuKgKW5PvqMEOhXqMQbJyMRrIdbfs", token)
+	testify.Equal(t, "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdmF0YXIiOiJodHRwczovL2F2YXRhcnMuZ2l0aHVidXNlcmNvbnRlbnQuY29tL3UvNzQ2MzY4Nz92PTQiLCJleHAiOjI2NjMyMjU3NzgsImlhdCI6MTY2MzIxODU3OCwiaWQiOjEsImlzcyI6ImdvLXpvb3giLCJuaWNrbmFtZSI6Ilplcm8ifQ.-5GEqebxP2ax6ZLM0St4rArMFnE56e6vITK9vexpYlU", token)
 
 	payload, err := j.Verify(token)
 	if err != nil {
@@ -31,8 +32,8 @@ func TestJWT(t *testing.T) {
 		t.Fatal("issuedAt mismatch")
 	}
 
-	if j.GetExpiresAt() != 0 {
-		t.Fatal("expiresAt mismatch")
+	if j.GetExpiresAt() != 2663225778 {
+		t.Fatalf("expiresAt mismatch, got %d", j.GetExpiresAt())
 	}
 
 	if j.GetNotBefore() != 0 {
@@ -63,14 +64,15 @@ func TestJWT(t *testing.T) {
 func TestGoZooxJWTSign(t *testing.T) {
 	secret := "secret"
 	jwt := New(secret, &Options{
-		IssuedAt: 1648268173,
+		IssuedAt:  1648268173,
+		ExpiresAt: 1712541092,
 	})
 	payload := map[string]interface{}{
 		"name": "zero",
 		"id":   "abcd",
 	}
 
-	_token := "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE2NDgyNjgxNzMsImlkIjoiYWJjZCIsImlzcyI6ImdvLXpvb3giLCJuYW1lIjoiemVybyJ9.6InYxP1hzY-FZHzo8-ehJX_sbWi1qCF_VLoajoTj7do"
+	_token := "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3MTI1NDEwOTIsImlhdCI6MTY0ODI2ODE3MywiaWQiOiJhYmNkIiwiaXNzIjoiZ28tem9veCIsIm5hbWUiOiJ6ZXJvIn0.h_oS3wSWLf2BqGoBNysVFWR9xWfsDVXHKSiK5sv_zPg"
 
 	token, err := jwt.Sign(payload)
 	if err != nil {
