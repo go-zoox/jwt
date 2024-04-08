@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"testing"
+	"time"
 
 	"github.com/go-zoox/testify"
 )
@@ -54,6 +55,96 @@ func TestJWT(t *testing.T) {
 
 	if j.GetJwtID() != "" {
 		t.Fatal("jwtID mismatch")
+	}
+
+	testify.Equal(t, payload.Get("id").Float64(), 1)
+	testify.Equal(t, payload.Get("nickname").String(), "Zero")
+	testify.Equal(t, payload.Get("avatar").String(), "https://avatars.githubusercontent.com/u/7463687?v=4")
+}
+
+func TestJWTAutoIssuedAtAndExpiredAt(t *testing.T) {
+	j := New("secret")
+	token, err := j.Sign(map[string]interface{}{
+		"id":       1,
+		"nickname": "Zero",
+		"avatar":   "https://avatars.githubusercontent.com/u/7463687?v=4",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	payload, err := j.Verify(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testify.NotEqual(t, j.GetIssuedAt(), 0, "issuedAt is 0")
+	testify.NotEqual(t, j.GetExpiresAt(), 0, "expiresAt is 0")
+
+	// default expiresAt - issuedAt = 7200
+	if j.GetExpiresAt()-j.GetIssuedAt() != 7200 {
+		t.Fatalf("expiresAt - issuedAt != 7200, got %d", j.GetExpiresAt()-j.GetIssuedAt())
+	}
+
+	testify.Equal(t, payload.Get("id").Float64(), 1)
+	testify.Equal(t, payload.Get("nickname").String(), "Zero")
+	testify.Equal(t, payload.Get("avatar").String(), "https://avatars.githubusercontent.com/u/7463687?v=4")
+}
+
+func TestJWTCustomIssuedAtAndAutoExpiredAt(t *testing.T) {
+	j := New("secret", &Options{
+		IssuedAt: time.Now().Unix(),
+	})
+	token, err := j.Sign(map[string]interface{}{
+		"id":       1,
+		"nickname": "Zero",
+		"avatar":   "https://avatars.githubusercontent.com/u/7463687?v=4",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	payload, err := j.Verify(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testify.NotEqual(t, j.GetIssuedAt(), 0, "issuedAt is 0")
+	testify.NotEqual(t, j.GetExpiresAt(), 0, "expiresAt is 0")
+
+	// default expiresAt - issuedAt = 7200
+	if j.GetExpiresAt()-j.GetIssuedAt() != 7200 {
+		t.Fatalf("expiresAt - issuedAt != 7200, got %d", j.GetExpiresAt()-j.GetIssuedAt())
+	}
+
+	testify.Equal(t, payload.Get("id").Float64(), 1)
+	testify.Equal(t, payload.Get("nickname").String(), "Zero")
+	testify.Equal(t, payload.Get("avatar").String(), "https://avatars.githubusercontent.com/u/7463687?v=4")
+}
+
+func TestJWTCustomExpiredAt(t *testing.T) {
+	j := New("secret", &Options{
+		ExpiresAt: time.Now().Unix() + 12345,
+	})
+	token, err := j.Sign(map[string]interface{}{
+		"id":       1,
+		"nickname": "Zero",
+		"avatar":   "https://avatars.githubusercontent.com/u/7463687?v=4",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	payload, err := j.Verify(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testify.NotEqual(t, j.GetIssuedAt(), 0, "issuedAt is 0")
+	testify.NotEqual(t, j.GetExpiresAt(), 0, "expiresAt is 0")
+
+	if j.GetExpiresAt()-j.GetIssuedAt() != 12345 {
+		t.Fatalf("expiresAt - issuedAt != 12345, got %d", j.GetExpiresAt()-j.GetIssuedAt())
 	}
 
 	testify.Equal(t, payload.Get("id").Float64(), 1)
