@@ -1,6 +1,10 @@
 package jwt
 
-import typ "github.com/go-zoox/core-utils/type"
+import (
+	"time"
+
+	typ "github.com/go-zoox/core-utils/type"
+)
 
 // Options is the options for jwt
 type Options struct {
@@ -27,6 +31,9 @@ type Options struct {
 
 	// Algorithm is the jwt crypto algorithm.
 	Algorithm string `json:"alg"`
+
+	// MaxAge is the token max age, default 2h
+	MaxAge time.Duration
 }
 
 // Jwt is the jwt
@@ -87,6 +94,7 @@ func (j *jwt) Sign(payload map[string]interface{}) (string, error) {
 		IssuedAt:  j.options.IssuedAt,
 		JWTID:     j.options.JwtID,
 		Algorithm: j.options.Algorithm,
+		MaxAge:    j.options.MaxAge,
 	})
 }
 

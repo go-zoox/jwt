@@ -19,6 +19,9 @@ type SignOptions struct {
 	IssuedAt  int64  `json:"iat"`
 	JWTID     string `json:"jti"`
 	Algorithm string
+
+	// MaxAge is the token max age, default 2h
+	MaxAge time.Duration
 }
 
 // Sign signs data with secret
@@ -26,6 +29,12 @@ func Sign(secret string, payload map[string]any, options ...*SignOptions) (strin
 	var opt *SignOptions = nil
 	if len(options) > 0 && options[0] != nil {
 		opt = options[0]
+	}
+
+	// default max age: 2h (7200s)
+	var maxAge int64 = 7200
+	if opt.MaxAge != 0 {
+		maxAge = int64(opt.MaxAge.Seconds())
 	}
 
 	headerX := Header{
@@ -37,7 +46,7 @@ func Sign(secret string, payload map[string]any, options ...*SignOptions) (strin
 	// issuedAt default now
 	issuedAt := now
 	// expiredAt default 2 hour
-	expiredAt := now + 7200
+	expiredAt := now + maxAge
 	//
 	payloadX := map[string]interface{}{
 		"iss": "go-zoox",
@@ -70,7 +79,7 @@ func Sign(secret string, payload map[string]any, options ...*SignOptions) (strin
 
 		if opt.IssuedAt > 0 {
 			issuedAt = opt.IssuedAt
-			expiredAt = issuedAt + 7200
+			expiredAt = issuedAt + maxAge
 		}
 
 		if opt.ExpiresAt > 0 {
