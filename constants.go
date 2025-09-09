@@ -26,6 +26,7 @@ const AlgES384 = "ES384"
 
 // AlgES512 is the algorithm name for ES512
 const AlgES512 = "ES512"
+
 // const AlgPS256 = "PS256"
 // const AlgPS512 = "PS512"
 // const AlgPS384 = "PS384"

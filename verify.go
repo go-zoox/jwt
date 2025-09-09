@@ -96,11 +96,11 @@ func decodeECDSASignature(signature []byte) (*big.Int, *big.Int, error) {
 	if len(signature)%2 != 0 {
 		return nil, nil, fmt.Errorf("invalid signature length")
 	}
-	
+
 	halfLen := len(signature) / 2
 	r := new(big.Int).SetBytes(signature[:halfLen])
 	s := new(big.Int).SetBytes(signature[halfLen:])
-	
+
 	return r, s, nil
 }
 
@@ -193,24 +193,24 @@ func Verify(secret string, token string, options ...*VerifyOptions) (header *Hea
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to parse ECDSA public key: %v", err)
 		}
-		
+
 		// Decode the signature
 		signatureBytes, err := base64.RawURLEncoding.DecodeString(signatureX)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to decode signature: %v", err)
 		}
-		
+
 		// Decode r and s from signature
 		r, s, err := decodeECDSASignature(signatureBytes)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to decode ECDSA signature: %v", err)
 		}
-		
+
 		// Create hash of the message
 		hasher := sha256.New()
 		hasher.Write([]byte(fmt.Sprintf("%s.%s", headerBase64, payloadBase64)))
 		hashed := hasher.Sum(nil)
-		
+
 		// Verify the signature
 		isValid = ecdsa.Verify(publicKey, hashed, r, s)
 	case AlgES384:
@@ -218,24 +218,24 @@ func Verify(secret string, token string, options ...*VerifyOptions) (header *Hea
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to parse ECDSA public key: %v", err)
 		}
-		
+
 		// Decode the signature
 		signatureBytes, err := base64.RawURLEncoding.DecodeString(signatureX)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to decode signature: %v", err)
 		}
-		
+
 		// Decode r and s from signature
 		r, s, err := decodeECDSASignature(signatureBytes)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to decode ECDSA signature: %v", err)
 		}
-		
+
 		// Create hash of the message
 		hasher := sha512.New384()
 		hasher.Write([]byte(fmt.Sprintf("%s.%s", headerBase64, payloadBase64)))
 		hashed := hasher.Sum(nil)
-		
+
 		// Verify the signature
 		isValid = ecdsa.Verify(publicKey, hashed, r, s)
 	case AlgES512:
@@ -243,24 +243,24 @@ func Verify(secret string, token string, options ...*VerifyOptions) (header *Hea
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to parse ECDSA public key: %v", err)
 		}
-		
+
 		// Decode the signature
 		signatureBytes, err := base64.RawURLEncoding.DecodeString(signatureX)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to decode signature: %v", err)
 		}
-		
+
 		// Decode r and s from signature
 		r, s, err := decodeECDSASignature(signatureBytes)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to decode ECDSA signature: %v", err)
 		}
-		
+
 		// Create hash of the message
 		hasher := sha512.New()
 		hasher.Write([]byte(fmt.Sprintf("%s.%s", headerBase64, payloadBase64)))
 		hashed := hasher.Sum(nil)
-		
+
 		// Verify the signature
 		isValid = ecdsa.Verify(publicKey, hashed, r, s)
 	default:

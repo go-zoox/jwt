@@ -100,13 +100,13 @@ func encodeECDSASignature(r, s *big.Int) []byte {
 	// Convert r and s to byte slices
 	rBytes := r.Bytes()
 	sBytes := s.Bytes()
-	
+
 	// Ensure they are the same length by padding with zeros if necessary
 	maxLen := len(rBytes)
 	if len(sBytes) > maxLen {
 		maxLen = len(sBytes)
 	}
-	
+
 	// Pad with zeros to make them the same length
 	if len(rBytes) < maxLen {
 		padding := make([]byte, maxLen-len(rBytes))
@@ -116,7 +116,7 @@ func encodeECDSASignature(r, s *big.Int) []byte {
 		padding := make([]byte, maxLen-len(sBytes))
 		sBytes = append(padding, sBytes...)
 	}
-	
+
 	// Concatenate r and s
 	return append(rBytes, sBytes...)
 }
@@ -272,18 +272,18 @@ func Sign(secret string, payload map[string]any, options ...*SignOptions) (strin
 		if err != nil {
 			return "", fmt.Errorf("failed to parse ECDSA private key: %v", err)
 		}
-		
+
 		// Create hash of the message
 		hasher := sha256.New()
 		hasher.Write([]byte(headerBase64 + "." + payloadBase64))
 		hashed := hasher.Sum(nil)
-		
+
 		// Sign the hash
 		r, s, err := ecdsa.Sign(rand.Reader, privateKey, hashed)
 		if err != nil {
 			return "", fmt.Errorf("failed to sign with ECDSA: %v", err)
 		}
-		
+
 		// Encode r and s as DER-encoded ASN.1 integers
 		signatureBytes := encodeECDSASignature(r, s)
 		signature = base64.RawURLEncoding.EncodeToString(signatureBytes)
@@ -292,18 +292,18 @@ func Sign(secret string, payload map[string]any, options ...*SignOptions) (strin
 		if err != nil {
 			return "", fmt.Errorf("failed to parse ECDSA private key: %v", err)
 		}
-		
+
 		// Create hash of the message
 		hasher := sha512.New384()
 		hasher.Write([]byte(headerBase64 + "." + payloadBase64))
 		hashed := hasher.Sum(nil)
-		
+
 		// Sign the hash
 		r, s, err := ecdsa.Sign(rand.Reader, privateKey, hashed)
 		if err != nil {
 			return "", fmt.Errorf("failed to sign with ECDSA: %v", err)
 		}
-		
+
 		// Encode r and s as DER-encoded ASN.1 integers
 		signatureBytes := encodeECDSASignature(r, s)
 		signature = base64.RawURLEncoding.EncodeToString(signatureBytes)
@@ -312,18 +312,18 @@ func Sign(secret string, payload map[string]any, options ...*SignOptions) (strin
 		if err != nil {
 			return "", fmt.Errorf("failed to parse ECDSA private key: %v", err)
 		}
-		
+
 		// Create hash of the message
 		hasher := sha512.New()
 		hasher.Write([]byte(headerBase64 + "." + payloadBase64))
 		hashed := hasher.Sum(nil)
-		
+
 		// Sign the hash
 		r, s, err := ecdsa.Sign(rand.Reader, privateKey, hashed)
 		if err != nil {
 			return "", fmt.Errorf("failed to sign with ECDSA: %v", err)
 		}
-		
+
 		// Encode r and s as DER-encoded ASN.1 integers
 		signatureBytes := encodeECDSASignature(r, s)
 		signature = base64.RawURLEncoding.EncodeToString(signatureBytes)
