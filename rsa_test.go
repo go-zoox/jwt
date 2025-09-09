@@ -1,7 +1,9 @@
-// Package jwt tests for RSA-based JWT algorithms (RS256, RS384, RS512)
+// Package jwt tests for RSA and ECDSA-based JWT algorithms (RS256, RS384, RS512, ES256, ES384, ES512)
 package jwt
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -18,6 +20,41 @@ import (
 func generateTestRSAKeyPair() (privateKeyPEM, publicKeyPEM string, err error) {
 	// Generate private key
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return "", "", err
+	}
+
+	// Encode private key to PEM
+	privateKeyDER, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {
+		return "", "", err
+	}
+
+	privateKeyBlock := &pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: privateKeyDER,
+	}
+	privateKeyPEM = string(pem.EncodeToMemory(privateKeyBlock))
+
+	// Encode public key to PEM
+	publicKeyDER, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return "", "", err
+	}
+
+	publicKeyBlock := &pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: publicKeyDER,
+	}
+	publicKeyPEM = string(pem.EncodeToMemory(publicKeyBlock))
+
+	return privateKeyPEM, publicKeyPEM, nil
+}
+
+// generateTestECDSAKeyPair generates a test ECDSA key pair for testing
+func generateTestECDSAKeyPair() (privateKeyPEM, publicKeyPEM string, err error) {
+	// Generate private key using P-256 curve
+	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return "", "", err
 	}
@@ -1093,4 +1130,271 @@ func TestRS384LargePayload(t *testing.T) {
 
 	testify.Equal(t, payload.Get("user_id").Int64(), int64(456))
 	testify.NotEqual(t, payload.Get("data"), nil)
+}
+
+func TestES256SignAndVerify(t *testing.T) {
+	privateKeyPEM, publicKeyPEM, err := generateTestECDSAKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Test signing with ES256
+	payload := map[string]interface{}{
+		"id":       1,
+		"nickname": "Zero",
+		"avatar":   "https://avatars.githubusercontent.com/u/7463687?v=4",
+	}
+
+	token, err := Sign(privateKeyPEM, payload, &SignOptions{
+		Algorithm: AlgES256,
+		IssuedAt:  1663218578,
+		ExpiresAt: 2663225778,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Test verification with ES256
+	header, payloadResult, err := Verify(publicKeyPEM, token)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify algorithm
+	testify.Equal(t, AlgES256, header.Algorithm)
+
+	// Verify payload content
+	testify.Equal(t, payloadResult.Get("id").Float64(), 1.0)
+	testify.Equal(t, payloadResult.Get("nickname").String(), "Zero")
+	testify.Equal(t, payloadResult.Get("avatar").String(), "https://avatars.githubusercontent.com/u/7463687?v=4")
+}
+
+func TestES384SignAndVerify(t *testing.T) {
+	privateKeyPEM, publicKeyPEM, err := generateTestECDSAKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Test signing with ES384
+	payload := map[string]interface{}{
+		"id":       1,
+		"nickname": "Zero",
+		"avatar":   "https://avatars.githubusercontent.com/u/7463687?v=4",
+	}
+
+	token, err := Sign(privateKeyPEM, payload, &SignOptions{
+		Algorithm: AlgES384,
+		IssuedAt:  1663218578,
+		ExpiresAt: 2663225778,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Test verification with ES384
+	header, payloadResult, err := Verify(publicKeyPEM, token)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify algorithm
+	testify.Equal(t, AlgES384, header.Algorithm)
+
+	// Verify payload content
+	testify.Equal(t, payloadResult.Get("id").Float64(), 1.0)
+	testify.Equal(t, payloadResult.Get("nickname").String(), "Zero")
+	testify.Equal(t, payloadResult.Get("avatar").String(), "https://avatars.githubusercontent.com/u/7463687?v=4")
+}
+
+func TestES512SignAndVerify(t *testing.T) {
+	privateKeyPEM, publicKeyPEM, err := generateTestECDSAKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Test signing with ES512
+	payload := map[string]interface{}{
+		"id":       1,
+		"nickname": "Zero",
+		"avatar":   "https://avatars.githubusercontent.com/u/7463687?v=4",
+	}
+
+	token, err := Sign(privateKeyPEM, payload, &SignOptions{
+		Algorithm: AlgES512,
+		IssuedAt:  1663218578,
+		ExpiresAt: 2663225778,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Test verification with ES512
+	header, payloadResult, err := Verify(publicKeyPEM, token)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify algorithm
+	testify.Equal(t, AlgES512, header.Algorithm)
+
+	// Verify payload content
+	testify.Equal(t, payloadResult.Get("id").Float64(), 1.0)
+	testify.Equal(t, payloadResult.Get("nickname").String(), "Zero")
+	testify.Equal(t, payloadResult.Get("avatar").String(), "https://avatars.githubusercontent.com/u/7463687?v=4")
+}
+
+func TestES256JWT(t *testing.T) {
+	privateKeyPEM, publicKeyPEM, err := generateTestECDSAKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create JWT instance with ES256
+	j := NewES256(privateKeyPEM)
+
+	// Set custom options
+	j.SetIssuer("test-issuer")
+	j.SetSubject("test-subject")
+	j.SetAudience("test-audience")
+	j.SetIssuedAt(1663218578)
+	j.SetExpiresAt(2663225778)
+
+	payload := map[string]interface{}{
+		"id":       1,
+		"nickname": "Zero",
+		"avatar":   "https://avatars.githubusercontent.com/u/7463687?v=4",
+	}
+
+	// Sign the token
+	token, err := j.Sign(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a new JWT instance for verification with public key
+	jVerify := New(publicKeyPEM, &Options{
+		Algorithm: AlgES256,
+	})
+
+	// Verify the token
+	payloadResult, err := jVerify.Verify(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify payload content
+	testify.Equal(t, payloadResult.Get("id").Float64(), 1.0)
+	testify.Equal(t, payloadResult.Get("nickname").String(), "Zero")
+	testify.Equal(t, payloadResult.Get("avatar").String(), "https://avatars.githubusercontent.com/u/7463687?v=4")
+
+	// Verify JWT claims from the verification result
+	testify.Equal(t, payloadResult.Get("iss").String(), "test-issuer")
+	testify.Equal(t, payloadResult.Get("sub").String(), "test-subject")
+	testify.Equal(t, payloadResult.Get("aud").String(), "test-audience")
+	testify.Equal(t, payloadResult.Get("iat").Int64(), int64(1663218578))
+	testify.Equal(t, payloadResult.Get("exp").Int64(), int64(2663225778))
+}
+
+func TestES384JWT(t *testing.T) {
+	privateKeyPEM, publicKeyPEM, err := generateTestECDSAKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create JWT instance with ES384
+	j := NewES384(privateKeyPEM)
+
+	// Set custom options
+	j.SetIssuer("test-issuer")
+	j.SetSubject("test-subject")
+	j.SetAudience("test-audience")
+	j.SetIssuedAt(1663218578)
+	j.SetExpiresAt(2663225778)
+
+	payload := map[string]interface{}{
+		"id":       1,
+		"nickname": "Zero",
+		"avatar":   "https://avatars.githubusercontent.com/u/7463687?v=4",
+	}
+
+	// Sign the token
+	token, err := j.Sign(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a new JWT instance for verification with public key
+	jVerify := New(publicKeyPEM, &Options{
+		Algorithm: AlgES384,
+	})
+
+	// Verify the token
+	payloadResult, err := jVerify.Verify(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify payload content
+	testify.Equal(t, payloadResult.Get("id").Float64(), 1.0)
+	testify.Equal(t, payloadResult.Get("nickname").String(), "Zero")
+	testify.Equal(t, payloadResult.Get("avatar").String(), "https://avatars.githubusercontent.com/u/7463687?v=4")
+
+	// Verify JWT claims from the verification result
+	testify.Equal(t, payloadResult.Get("iss").String(), "test-issuer")
+	testify.Equal(t, payloadResult.Get("sub").String(), "test-subject")
+	testify.Equal(t, payloadResult.Get("aud").String(), "test-audience")
+	testify.Equal(t, payloadResult.Get("iat").Int64(), int64(1663218578))
+	testify.Equal(t, payloadResult.Get("exp").Int64(), int64(2663225778))
+}
+
+func TestES512JWT(t *testing.T) {
+	privateKeyPEM, publicKeyPEM, err := generateTestECDSAKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create JWT instance with ES512
+	j := NewES512(privateKeyPEM)
+
+	// Set custom options
+	j.SetIssuer("test-issuer")
+	j.SetSubject("test-subject")
+	j.SetAudience("test-audience")
+	j.SetIssuedAt(1663218578)
+	j.SetExpiresAt(2663225778)
+
+	payload := map[string]interface{}{
+		"id":       1,
+		"nickname": "Zero",
+		"avatar":   "https://avatars.githubusercontent.com/u/7463687?v=4",
+	}
+
+	// Sign the token
+	token, err := j.Sign(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a new JWT instance for verification with public key
+	jVerify := New(publicKeyPEM, &Options{
+		Algorithm: AlgES512,
+	})
+
+	// Verify the token
+	payloadResult, err := jVerify.Verify(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify payload content
+	testify.Equal(t, payloadResult.Get("id").Float64(), 1.0)
+	testify.Equal(t, payloadResult.Get("nickname").String(), "Zero")
+	testify.Equal(t, payloadResult.Get("avatar").String(), "https://avatars.githubusercontent.com/u/7463687?v=4")
+
+	// Verify JWT claims from the verification result
+	testify.Equal(t, payloadResult.Get("iss").String(), "test-issuer")
+	testify.Equal(t, payloadResult.Get("sub").String(), "test-subject")
+	testify.Equal(t, payloadResult.Get("aud").String(), "test-audience")
+	testify.Equal(t, payloadResult.Get("iat").Int64(), int64(1663218578))
+	testify.Equal(t, payloadResult.Get("exp").Int64(), int64(2663225778))
 }

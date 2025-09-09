@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"crypto"
+	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/sha512"
@@ -10,6 +11,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"math/big"
 	"time"
 
 	typ "github.com/go-zoox/core-utils/type"
@@ -56,6 +58,50 @@ func parseRSAPublicKey(publicKeyPEM string) (*rsa.PublicKey, error) {
 	}
 
 	return rsaKey, nil
+}
+
+// parseECDSAPublicKey parses an ECDSA public key from PEM format
+func parseECDSAPublicKey(publicKeyPEM string) (*ecdsa.PublicKey, error) {
+	block, _ := pem.Decode([]byte(publicKeyPEM))
+	if block == nil {
+		return nil, fmt.Errorf("failed to parse PEM block containing the key")
+	}
+
+	var key interface{}
+	var err error
+
+	switch block.Type {
+	case "PUBLIC KEY":
+		key, err = x509.ParsePKIXPublicKey(block.Bytes)
+	case "EC PUBLIC KEY":
+		key, err = x509.ParsePKCS1PublicKey(block.Bytes)
+	default:
+		return nil, fmt.Errorf("unsupported key type: %s", block.Type)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse public key: %v", err)
+	}
+
+	ecdsaKey, ok := key.(*ecdsa.PublicKey)
+	if !ok {
+		return nil, fmt.Errorf("not an ECDSA public key")
+	}
+
+	return ecdsaKey, nil
+}
+
+// decodeECDSASignature decodes ECDSA signature from concatenated r and s bytes
+func decodeECDSASignature(signature []byte) (*big.Int, *big.Int, error) {
+	if len(signature)%2 != 0 {
+		return nil, nil, fmt.Errorf("invalid signature length")
+	}
+
+	halfLen := len(signature) / 2
+	r := new(big.Int).SetBytes(signature[:halfLen])
+	s := new(big.Int).SetBytes(signature[halfLen:])
+
+	return r, s, nil
 }
 
 // Verify verifies data with secret
@@ -142,6 +188,81 @@ func Verify(secret string, token string, options ...*VerifyOptions) (header *Hea
 		// Verify the signature
 		err = rsa.VerifyPKCS1v15(publicKey, crypto.SHA512, hashed, signatureBytes)
 		isValid = err == nil
+	case AlgES256:
+		publicKey, err := parseECDSAPublicKey(secret)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to parse ECDSA public key: %v", err)
+		}
+
+		// Decode the signature
+		signatureBytes, err := base64.RawURLEncoding.DecodeString(signatureX)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to decode signature: %v", err)
+		}
+
+		// Decode r and s from signature
+		r, s, err := decodeECDSASignature(signatureBytes)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to decode ECDSA signature: %v", err)
+		}
+
+		// Create hash of the message
+		hasher := sha256.New()
+		hasher.Write([]byte(fmt.Sprintf("%s.%s", headerBase64, payloadBase64)))
+		hashed := hasher.Sum(nil)
+
+		// Verify the signature
+		isValid = ecdsa.Verify(publicKey, hashed, r, s)
+	case AlgES384:
+		publicKey, err := parseECDSAPublicKey(secret)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to parse ECDSA public key: %v", err)
+		}
+
+		// Decode the signature
+		signatureBytes, err := base64.RawURLEncoding.DecodeString(signatureX)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to decode signature: %v", err)
+		}
+
+		// Decode r and s from signature
+		r, s, err := decodeECDSASignature(signatureBytes)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to decode ECDSA signature: %v", err)
+		}
+
+		// Create hash of the message
+		hasher := sha512.New384()
+		hasher.Write([]byte(fmt.Sprintf("%s.%s", headerBase64, payloadBase64)))
+		hashed := hasher.Sum(nil)
+
+		// Verify the signature
+		isValid = ecdsa.Verify(publicKey, hashed, r, s)
+	case AlgES512:
+		publicKey, err := parseECDSAPublicKey(secret)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to parse ECDSA public key: %v", err)
+		}
+
+		// Decode the signature
+		signatureBytes, err := base64.RawURLEncoding.DecodeString(signatureX)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to decode signature: %v", err)
+		}
+
+		// Decode r and s from signature
+		r, s, err := decodeECDSASignature(signatureBytes)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to decode ECDSA signature: %v", err)
+		}
+
+		// Create hash of the message
+		hasher := sha512.New()
+		hasher.Write([]byte(fmt.Sprintf("%s.%s", headerBase64, payloadBase64)))
+		hashed := hasher.Sum(nil)
+
+		// Verify the signature
+		isValid = ecdsa.Verify(publicKey, hashed, r, s)
 	default:
 		return nil, nil, fmt.Errorf("unsupported algorithm: %s", headerX.Algorithm)
 	}
