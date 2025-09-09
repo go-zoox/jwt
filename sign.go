@@ -1,8 +1,14 @@
 package jwt
 
 import (
+	"crypto"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/sha512"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"time"
 
@@ -22,6 +28,37 @@ type SignOptions struct {
 
 	// MaxAge is the token max age, default 2h
 	MaxAge time.Duration
+}
+
+// parseRSAPrivateKey parses an RSA private key from PEM format
+func parseRSAPrivateKey(privateKeyPEM string) (*rsa.PrivateKey, error) {
+	block, _ := pem.Decode([]byte(privateKeyPEM))
+	if block == nil {
+		return nil, fmt.Errorf("failed to parse PEM block containing the key")
+	}
+
+	var key interface{}
+	var err error
+
+	switch block.Type {
+	case "RSA PRIVATE KEY":
+		key, err = x509.ParsePKCS1PrivateKey(block.Bytes)
+	case "PRIVATE KEY":
+		key, err = x509.ParsePKCS8PrivateKey(block.Bytes)
+	default:
+		return nil, fmt.Errorf("unsupported key type: %s", block.Type)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse private key: %v", err)
+	}
+
+	rsaKey, ok := key.(*rsa.PrivateKey)
+	if !ok {
+		return nil, fmt.Errorf("not an RSA private key")
+	}
+
+	return rsaKey, nil
 }
 
 // Sign signs data with secret
@@ -116,6 +153,60 @@ func Sign(secret string, payload map[string]any, options ...*SignOptions) (strin
 		signature = hmac.Sha384(secret, headerBase64+"."+payloadBase64, "base64")
 	case AlgHS512:
 		signature = hmac.Sha512(secret, headerBase64+"."+payloadBase64, "base64")
+	case AlgRS256:
+		privateKey, err := parseRSAPrivateKey(secret)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse RSA private key: %v", err)
+		}
+
+		// Create hash of the message
+		hasher := sha256.New()
+		hasher.Write([]byte(headerBase64 + "." + payloadBase64))
+		hashed := hasher.Sum(nil)
+
+		// Sign the hash
+		signatureBytes, err := rsa.SignPKCS1v15(nil, privateKey, crypto.SHA256, hashed)
+		if err != nil {
+			return "", fmt.Errorf("failed to sign with RSA: %v", err)
+		}
+
+		signature = base64.RawURLEncoding.EncodeToString(signatureBytes)
+	case AlgRS384:
+		privateKey, err := parseRSAPrivateKey(secret)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse RSA private key: %v", err)
+		}
+
+		// Create hash of the message
+		hasher := sha512.New384()
+		hasher.Write([]byte(headerBase64 + "." + payloadBase64))
+		hashed := hasher.Sum(nil)
+
+		// Sign the hash
+		signatureBytes, err := rsa.SignPKCS1v15(nil, privateKey, crypto.SHA384, hashed)
+		if err != nil {
+			return "", fmt.Errorf("failed to sign with RSA: %v", err)
+		}
+
+		signature = base64.RawURLEncoding.EncodeToString(signatureBytes)
+	case AlgRS512:
+		privateKey, err := parseRSAPrivateKey(secret)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse RSA private key: %v", err)
+		}
+
+		// Create hash of the message
+		hasher := sha512.New()
+		hasher.Write([]byte(headerBase64 + "." + payloadBase64))
+		hashed := hasher.Sum(nil)
+
+		// Sign the hash
+		signatureBytes, err := rsa.SignPKCS1v15(nil, privateKey, crypto.SHA512, hashed)
+		if err != nil {
+			return "", fmt.Errorf("failed to sign with RSA: %v", err)
+		}
+
+		signature = base64.RawURLEncoding.EncodeToString(signatureBytes)
 	default:
 		return "", fmt.Errorf("unsupported algorithm: %s", headerX.Algorithm)
 	}

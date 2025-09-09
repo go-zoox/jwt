@@ -8,7 +8,7 @@ import (
 
 func TestVerify(t *testing.T) {
 	secret := "secret"
-	token := "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdmF0YXIiOiJodHRwczovL2F2YXRhcnMuZ2l0aHVidXNlcmNvbnRlbnQuY29tL3UvNzQ2MzY4Nz92PTQiLCJleHAiOjI3MTI1NDEyMDcsImlhdCI6MTY2MzIxODU3OCwiaWQiOjEsImlzcyI6ImdvLXpvb3giLCJuaWNrbmFtZSI6Ilplcm8ifQ.oO3EckRx1yMkBNyQzCWF23Q_eU7JTlmyKdzHylmgI_k"
+	token := "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdmF0YXIiOiJodHRwczovL2F2YXRhcnMuZ2l0aHVidXNlcmNvbnRlbnQuY29tL3UvNzQ2MzY4Nz92PTQiLCJleHAiOjI3NTc0MTE2OTcsImlhdCI6MTY2MzIxODU3OCwiaWQiOjEsImlzcyI6ImdvLXpvb3giLCJuaWNrbmFtZSI6Ilplcm8ifQ.gpkpFw3rPMZFiGoyiz2MUpCNiCQKyYYzhtgkLeo1h-c"
 
 	_, payload, err := Verify(secret, token)
 	if err != nil {
