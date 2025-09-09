@@ -35,3 +35,21 @@ func NewRS384(privateKey string) Jwt {
 		Algorithm: AlgRS384,
 	})
 }
+
+func NewES256(privateKey string) Jwt {
+	return New(privateKey, &Options{
+		Algorithm: AlgES256,
+	})
+}
+
+func NewES384(privateKey string) Jwt {
+	return New(privateKey, &Options{
+		Algorithm: AlgES384,
+	})
+}
+
+func NewES512(privateKey string) Jwt {
+	return New(privateKey, &Options{
+		Algorithm: AlgES512,
+	})
+}

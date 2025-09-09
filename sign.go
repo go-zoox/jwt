@@ -2,6 +2,8 @@ package jwt
 
 import (
 	"crypto"
+	"crypto/ecdsa"
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/sha512"
@@ -10,6 +12,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/go-zoox/crypto/hmac"
@@ -59,6 +62,63 @@ func parseRSAPrivateKey(privateKeyPEM string) (*rsa.PrivateKey, error) {
 	}
 
 	return rsaKey, nil
+}
+
+// parseECDSAPrivateKey parses an ECDSA private key from PEM format
+func parseECDSAPrivateKey(privateKeyPEM string) (*ecdsa.PrivateKey, error) {
+	block, _ := pem.Decode([]byte(privateKeyPEM))
+	if block == nil {
+		return nil, fmt.Errorf("failed to parse PEM block containing the key")
+	}
+
+	var key interface{}
+	var err error
+
+	switch block.Type {
+	case "EC PRIVATE KEY":
+		key, err = x509.ParseECPrivateKey(block.Bytes)
+	case "PRIVATE KEY":
+		key, err = x509.ParsePKCS8PrivateKey(block.Bytes)
+	default:
+		return nil, fmt.Errorf("unsupported key type: %s", block.Type)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse private key: %v", err)
+	}
+
+	ecdsaKey, ok := key.(*ecdsa.PrivateKey)
+	if !ok {
+		return nil, fmt.Errorf("not an ECDSA private key")
+	}
+
+	return ecdsaKey, nil
+}
+
+// encodeECDSASignature encodes ECDSA signature r and s as DER-encoded ASN.1 integers
+func encodeECDSASignature(r, s *big.Int) []byte {
+	// Convert r and s to byte slices
+	rBytes := r.Bytes()
+	sBytes := s.Bytes()
+	
+	// Ensure they are the same length by padding with zeros if necessary
+	maxLen := len(rBytes)
+	if len(sBytes) > maxLen {
+		maxLen = len(sBytes)
+	}
+	
+	// Pad with zeros to make them the same length
+	if len(rBytes) < maxLen {
+		padding := make([]byte, maxLen-len(rBytes))
+		rBytes = append(padding, rBytes...)
+	}
+	if len(sBytes) < maxLen {
+		padding := make([]byte, maxLen-len(sBytes))
+		sBytes = append(padding, sBytes...)
+	}
+	
+	// Concatenate r and s
+	return append(rBytes, sBytes...)
 }
 
 // Sign signs data with secret
@@ -206,6 +266,66 @@ func Sign(secret string, payload map[string]any, options ...*SignOptions) (strin
 			return "", fmt.Errorf("failed to sign with RSA: %v", err)
 		}
 
+		signature = base64.RawURLEncoding.EncodeToString(signatureBytes)
+	case AlgES256:
+		privateKey, err := parseECDSAPrivateKey(secret)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse ECDSA private key: %v", err)
+		}
+		
+		// Create hash of the message
+		hasher := sha256.New()
+		hasher.Write([]byte(headerBase64 + "." + payloadBase64))
+		hashed := hasher.Sum(nil)
+		
+		// Sign the hash
+		r, s, err := ecdsa.Sign(rand.Reader, privateKey, hashed)
+		if err != nil {
+			return "", fmt.Errorf("failed to sign with ECDSA: %v", err)
+		}
+		
+		// Encode r and s as DER-encoded ASN.1 integers
+		signatureBytes := encodeECDSASignature(r, s)
+		signature = base64.RawURLEncoding.EncodeToString(signatureBytes)
+	case AlgES384:
+		privateKey, err := parseECDSAPrivateKey(secret)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse ECDSA private key: %v", err)
+		}
+		
+		// Create hash of the message
+		hasher := sha512.New384()
+		hasher.Write([]byte(headerBase64 + "." + payloadBase64))
+		hashed := hasher.Sum(nil)
+		
+		// Sign the hash
+		r, s, err := ecdsa.Sign(rand.Reader, privateKey, hashed)
+		if err != nil {
+			return "", fmt.Errorf("failed to sign with ECDSA: %v", err)
+		}
+		
+		// Encode r and s as DER-encoded ASN.1 integers
+		signatureBytes := encodeECDSASignature(r, s)
+		signature = base64.RawURLEncoding.EncodeToString(signatureBytes)
+	case AlgES512:
+		privateKey, err := parseECDSAPrivateKey(secret)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse ECDSA private key: %v", err)
+		}
+		
+		// Create hash of the message
+		hasher := sha512.New()
+		hasher.Write([]byte(headerBase64 + "." + payloadBase64))
+		hashed := hasher.Sum(nil)
+		
+		// Sign the hash
+		r, s, err := ecdsa.Sign(rand.Reader, privateKey, hashed)
+		if err != nil {
+			return "", fmt.Errorf("failed to sign with ECDSA: %v", err)
+		}
+		
+		// Encode r and s as DER-encoded ASN.1 integers
+		signatureBytes := encodeECDSASignature(r, s)
 		signature = base64.RawURLEncoding.EncodeToString(signatureBytes)
 	default:
 		return "", fmt.Errorf("unsupported algorithm: %s", headerX.Algorithm)
