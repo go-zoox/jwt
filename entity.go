@@ -8,7 +8,7 @@ type Header struct {
 
 	// The algorithm used to sign the token.
 	// By default, this is "HS256"
-	// Available: HS256 | HS512 | HS384
+	// Available: HS256 | HS512 | HS384 | RS256 | RS512 | RS384
 	Algorithm string `json:"alg"`
 
 	// Content Type of the token.

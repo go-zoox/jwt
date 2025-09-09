@@ -9,9 +9,15 @@ const AlgHS512 = "HS512"
 // AlgHS384 is the algorithm name for HS384
 const AlgHS384 = "HS384"
 
-// const AlgRS256 = "RS256"
-// const AlgRS512 = "RS512"
-// const AlgRS384 = "RS384"
+// AlgRS256 is the algorithm name for RS256
+const AlgRS256 = "RS256"
+
+// AlgRS512 is the algorithm name for RS512
+const AlgRS512 = "RS512"
+
+// AlgRS384 is the algorithm name for RS384
+const AlgRS384 = "RS384"
+
 // const AlgES256 = "ES256"
 // const AlgES512 = "ES512"
 // const AlgES384 = "ES384"

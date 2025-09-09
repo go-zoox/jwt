@@ -1,6 +1,13 @@
 package jwt
 
 import (
+	"crypto"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/sha512"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"time"
@@ -20,6 +27,37 @@ type VerifyOptions struct {
 	JWTID     string `json:"jti"`
 }
 
+// parseRSAPublicKey parses an RSA public key from PEM format
+func parseRSAPublicKey(publicKeyPEM string) (*rsa.PublicKey, error) {
+	block, _ := pem.Decode([]byte(publicKeyPEM))
+	if block == nil {
+		return nil, fmt.Errorf("failed to parse PEM block containing the key")
+	}
+
+	var key interface{}
+	var err error
+
+	switch block.Type {
+	case "PUBLIC KEY":
+		key, err = x509.ParsePKIXPublicKey(block.Bytes)
+	case "RSA PUBLIC KEY":
+		key, err = x509.ParsePKCS1PublicKey(block.Bytes)
+	default:
+		return nil, fmt.Errorf("unsupported key type: %s", block.Type)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse public key: %v", err)
+	}
+
+	rsaKey, ok := key.(*rsa.PublicKey)
+	if !ok {
+		return nil, fmt.Errorf("not an RSA public key")
+	}
+
+	return rsaKey, nil
+}
+
 // Verify verifies data with secret
 func Verify(secret string, token string, options ...*VerifyOptions) (header *Header, payload *typ.Value, err error) {
 	var opt *VerifyOptions = nil
@@ -33,18 +71,82 @@ func Verify(secret string, token string, options ...*VerifyOptions) (header *Hea
 	}
 
 	var signature string
+	var isValid bool
 	switch headerX.Algorithm {
 	case AlgHS256:
 		signature = hmac.Sha256(secret, fmt.Sprintf("%s.%s", headerBase64, payloadBase64), "base64")
+		isValid = signature == signatureX
 	case AlgHS384:
 		signature = hmac.Sha384(secret, fmt.Sprintf("%s.%s", headerBase64, payloadBase64), "base64")
+		isValid = signature == signatureX
 	case AlgHS512:
 		signature = hmac.Sha512(secret, fmt.Sprintf("%s.%s", headerBase64, payloadBase64), "base64")
+		isValid = signature == signatureX
+	case AlgRS256:
+		publicKey, err := parseRSAPublicKey(secret)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to parse RSA public key: %v", err)
+		}
+
+		// Decode the signature
+		signatureBytes, err := base64.RawURLEncoding.DecodeString(signatureX)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to decode signature: %v", err)
+		}
+
+		// Create hash of the message
+		hasher := sha256.New()
+		hasher.Write([]byte(fmt.Sprintf("%s.%s", headerBase64, payloadBase64)))
+		hashed := hasher.Sum(nil)
+
+		// Verify the signature
+		err = rsa.VerifyPKCS1v15(publicKey, crypto.SHA256, hashed, signatureBytes)
+		isValid = err == nil
+	case AlgRS384:
+		publicKey, err := parseRSAPublicKey(secret)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to parse RSA public key: %v", err)
+		}
+
+		// Decode the signature
+		signatureBytes, err := base64.RawURLEncoding.DecodeString(signatureX)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to decode signature: %v", err)
+		}
+
+		// Create hash of the message
+		hasher := sha512.New384()
+		hasher.Write([]byte(fmt.Sprintf("%s.%s", headerBase64, payloadBase64)))
+		hashed := hasher.Sum(nil)
+
+		// Verify the signature
+		err = rsa.VerifyPKCS1v15(publicKey, crypto.SHA384, hashed, signatureBytes)
+		isValid = err == nil
+	case AlgRS512:
+		publicKey, err := parseRSAPublicKey(secret)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to parse RSA public key: %v", err)
+		}
+
+		// Decode the signature
+		signatureBytes, err := base64.RawURLEncoding.DecodeString(signatureX)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to decode signature: %v", err)
+		}
+
+		// Create hash of the message
+		hasher := sha512.New()
+		hasher.Write([]byte(fmt.Sprintf("%s.%s", headerBase64, payloadBase64)))
+		hashed := hasher.Sum(nil)
+
+		// Verify the signature
+		err = rsa.VerifyPKCS1v15(publicKey, crypto.SHA512, hashed, signatureBytes)
+		isValid = err == nil
 	default:
 		return nil, nil, fmt.Errorf("unsupported algorithm: %s", headerX.Algorithm)
 	}
 
-	if signature != signatureX {
+	if !isValid {
 		return nil, nil, errors.New("invalid signature")
 	}
 
