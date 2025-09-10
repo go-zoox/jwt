@@ -1,4 +1,4 @@
-// Package jwt tests for RSA and ECDSA-based JWT algorithms (RS256, RS384, RS512, ES256, ES384, ES512)
+// Package jwt tests for asymmetric JWT algorithms (RSA: RS256, RS384, RS512 | ECDSA: ES256, ES384, ES512)
 package jwt
 
 import (
