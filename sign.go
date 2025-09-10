@@ -327,6 +327,60 @@ func Sign(secret string, payload map[string]any, options ...*SignOptions) (strin
 		// Encode r and s as DER-encoded ASN.1 integers
 		signatureBytes := encodeECDSASignature(r, s)
 		signature = base64.RawURLEncoding.EncodeToString(signatureBytes)
+	case AlgPS256:
+		privateKey, err := parseRSAPrivateKey(secret)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse RSA private key: %v", err)
+		}
+		
+		// Create hash of the message
+		hasher := sha256.New()
+		hasher.Write([]byte(headerBase64 + "." + payloadBase64))
+		hashed := hasher.Sum(nil)
+		
+		// Sign the hash using RSA-PSS
+		signatureBytes, err := rsa.SignPSS(rand.Reader, privateKey, crypto.SHA256, hashed, nil)
+		if err != nil {
+			return "", fmt.Errorf("failed to sign with RSA-PSS: %v", err)
+		}
+		
+		signature = base64.RawURLEncoding.EncodeToString(signatureBytes)
+	case AlgPS384:
+		privateKey, err := parseRSAPrivateKey(secret)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse RSA private key: %v", err)
+		}
+		
+		// Create hash of the message
+		hasher := sha512.New384()
+		hasher.Write([]byte(headerBase64 + "." + payloadBase64))
+		hashed := hasher.Sum(nil)
+		
+		// Sign the hash using RSA-PSS
+		signatureBytes, err := rsa.SignPSS(rand.Reader, privateKey, crypto.SHA384, hashed, nil)
+		if err != nil {
+			return "", fmt.Errorf("failed to sign with RSA-PSS: %v", err)
+		}
+		
+		signature = base64.RawURLEncoding.EncodeToString(signatureBytes)
+	case AlgPS512:
+		privateKey, err := parseRSAPrivateKey(secret)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse RSA private key: %v", err)
+		}
+		
+		// Create hash of the message
+		hasher := sha512.New()
+		hasher.Write([]byte(headerBase64 + "." + payloadBase64))
+		hashed := hasher.Sum(nil)
+		
+		// Sign the hash using RSA-PSS
+		signatureBytes, err := rsa.SignPSS(rand.Reader, privateKey, crypto.SHA512, hashed, nil)
+		if err != nil {
+			return "", fmt.Errorf("failed to sign with RSA-PSS: %v", err)
+		}
+		
+		signature = base64.RawURLEncoding.EncodeToString(signatureBytes)
 	default:
 		return "", fmt.Errorf("unsupported algorithm: %s", headerX.Algorithm)
 	}

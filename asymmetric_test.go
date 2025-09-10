@@ -1,4 +1,4 @@
-// Package jwt tests for asymmetric JWT algorithms (RSA: RS256, RS384, RS512 | ECDSA: ES256, ES384, ES512)
+// Package jwt tests for asymmetric JWT algorithms (RSA: RS256, RS384, RS512 | ECDSA: ES256, ES384, ES512 | RSA-PSS: PS256, PS384, PS512)
 package jwt
 
 import (
@@ -1397,4 +1397,95 @@ func TestES512JWT(t *testing.T) {
 	testify.Equal(t, payloadResult.Get("aud").String(), "test-audience")
 	testify.Equal(t, payloadResult.Get("iat").Int64(), int64(1663218578))
 	testify.Equal(t, payloadResult.Get("exp").Int64(), int64(2663225778))
+}
+
+
+func TestPS256SignAndVerify(t *testing.T) {
+	privateKeyPEM, publicKeyPEM, err := generateTestRSAKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	payload := map[string]interface{}{
+		"id":       1,
+		"nickname": "Zero",
+	}
+
+	token, err := Sign(privateKeyPEM, payload, &SignOptions{
+		Algorithm: AlgPS256,
+		IssuedAt:  1663218578,
+		ExpiresAt: 2663225778,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	header, payloadResult, err := Verify(publicKeyPEM, token)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testify.Equal(t, AlgPS256, header.Algorithm)
+	testify.Equal(t, payloadResult.Get("id").Float64(), 1.0)
+	testify.Equal(t, payloadResult.Get("nickname").String(), "Zero")
+}
+
+func TestPS384SignAndVerify(t *testing.T) {
+	privateKeyPEM, publicKeyPEM, err := generateTestRSAKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	payload := map[string]interface{}{
+		"id":       1,
+		"nickname": "Zero",
+	}
+
+	token, err := Sign(privateKeyPEM, payload, &SignOptions{
+		Algorithm: AlgPS384,
+		IssuedAt:  1663218578,
+		ExpiresAt: 2663225778,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	header, payloadResult, err := Verify(publicKeyPEM, token)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testify.Equal(t, AlgPS384, header.Algorithm)
+	testify.Equal(t, payloadResult.Get("id").Float64(), 1.0)
+	testify.Equal(t, payloadResult.Get("nickname").String(), "Zero")
+}
+
+func TestPS512SignAndVerify(t *testing.T) {
+	privateKeyPEM, publicKeyPEM, err := generateTestRSAKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	payload := map[string]interface{}{
+		"id":       1,
+		"nickname": "Zero",
+	}
+
+	token, err := Sign(privateKeyPEM, payload, &SignOptions{
+		Algorithm: AlgPS512,
+		IssuedAt:  1663218578,
+		ExpiresAt: 2663225778,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	header, payloadResult, err := Verify(publicKeyPEM, token)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testify.Equal(t, AlgPS512, header.Algorithm)
+	testify.Equal(t, payloadResult.Get("id").Float64(), 1.0)
+	testify.Equal(t, payloadResult.Get("nickname").String(), "Zero")
 }
