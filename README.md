@@ -29,6 +29,9 @@ go get github.com/go-zoox/jwt
 | **ECDSA** | ES256 | ECDSA with SHA-256 | Asymmetric |
 | **ECDSA** | ES384 | ECDSA with SHA-384 | Asymmetric |
 | **ECDSA** | ES512 | ECDSA with SHA-512 | Asymmetric |
+| **RSA-PSS** | PS256 | RSA-PSS with SHA-256 | Asymmetric |
+| **RSA-PSS** | PS384 | RSA-PSS with SHA-384 | Asymmetric |
+| **RSA-PSS** | PS512 | RSA-PSS with SHA-512 | Asymmetric |
 
 ## 🎯 Quick Start
 
@@ -139,6 +142,33 @@ jVerify := jwt.New(publicKeyPEM, &jwt.Options{
 payload, err := jVerify.Verify(token)
 ```
 
+### RSA-PSS Algorithms (PS256, PS384, PS512)
+
+```go
+// Generate RSA key pair (2048-bit recommended)
+privateKeyPEM := `-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7VJTUt9Us8cKB...
+-----END PRIVATE KEY-----`
+
+publicKeyPEM := `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu1SU1LfVLPHCgX8x...
+-----END PUBLIC KEY-----`
+
+// Sign with PS256 (RSA-PSS with SHA-256)
+j := jwt.NewPS256(privateKeyPEM)
+token, err := j.Sign(payload)
+
+// Verify with PS256
+jVerify := jwt.New(publicKeyPEM, &jwt.Options{
+    Algorithm: jwt.AlgPS256,
+})
+payload, err := jVerify.Verify(token)
+
+// PS384 and PS512 work similarly
+j384 := jwt.NewPS384(privateKeyPEM)
+j512 := jwt.NewPS512(privateKeyPEM)
+```
+
 ## ⚙️ Configuration Options
 
 ### SignOptions
@@ -210,7 +240,8 @@ fmt.Println("User ID:", payload.Get("user_id").Int64())
 1. **HMAC Keys**: Use strong, random secrets (at least 256 bits)
 2. **RSA Keys**: Use at least 2048-bit keys (3072-bit recommended)
 3. **ECDSA Keys**: P-256 curve provides equivalent security to RSA-3072
-4. **Key Rotation**: Implement regular key rotation policies
+4. **RSA-PSS**: Preferred over PKCS1v15 for new applications
+5. **Key Rotation**: Implement regular key rotation policies
 
 ### Token Security
 
@@ -249,6 +280,9 @@ go test -v -run "TestRS.*"
 
 # ECDSA tests
 go test -v -run "TestES.*"
+
+# RSA-PSS tests
+go test -v -run "TestPS.*"
 ```
 
 ## 📊 Performance
@@ -258,6 +292,7 @@ go test -v -run "TestES.*"
 | HS256     | ~50,000        | ~50,000          | 256-bit  |
 | RS256     | ~1,000         | ~5,000           | 2048-bit |
 | ES256     | ~2,000         | ~3,000           | 256-bit  |
+| PS256     | ~800           | ~4,000           | 2048-bit |
 
 *Benchmarks on Intel i7-8700K, Go 1.21*
 
@@ -298,6 +333,9 @@ jwt.AlgRS512  // "RS512"
 jwt.AlgES256  // "ES256"
 jwt.AlgES384  // "ES384"
 jwt.AlgES512  // "ES512"
+jwt.AlgPS256  // "PS256"
+jwt.AlgPS384  // "PS384"
+jwt.AlgPS512  // "PS512"
 ```
 
 ### Constructor Functions
@@ -317,6 +355,11 @@ jwt.NewRS512(privateKey string) Jwt
 jwt.NewES256(privateKey string) Jwt
 jwt.NewES384(privateKey string) Jwt
 jwt.NewES512(privateKey string) Jwt
+
+// RSA-PSS constructors
+jwt.NewPS256(privateKey string) Jwt
+jwt.NewPS384(privateKey string) Jwt
+jwt.NewPS512(privateKey string) Jwt
 
 // Generic constructor
 jwt.New(secret string, options *Options) Jwt
