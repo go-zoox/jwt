@@ -268,18 +268,18 @@ func Verify(secret string, token string, options ...*VerifyOptions) (header *Hea
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to parse RSA public key: %v", err)
 		}
-		
+
 		// Decode the signature
 		signatureBytes, err := base64.RawURLEncoding.DecodeString(signatureX)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to decode signature: %v", err)
 		}
-		
+
 		// Create hash of the message
 		hasher := sha256.New()
 		hasher.Write([]byte(fmt.Sprintf("%s.%s", headerBase64, payloadBase64)))
 		hashed := hasher.Sum(nil)
-		
+
 		// Verify the signature using RSA-PSS
 		err = rsa.VerifyPSS(publicKey, crypto.SHA256, hashed, signatureBytes, nil)
 		isValid = err == nil
@@ -288,18 +288,18 @@ func Verify(secret string, token string, options ...*VerifyOptions) (header *Hea
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to parse RSA public key: %v", err)
 		}
-		
+
 		// Decode the signature
 		signatureBytes, err := base64.RawURLEncoding.DecodeString(signatureX)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to decode signature: %v", err)
 		}
-		
+
 		// Create hash of the message
 		hasher := sha512.New384()
 		hasher.Write([]byte(fmt.Sprintf("%s.%s", headerBase64, payloadBase64)))
 		hashed := hasher.Sum(nil)
-		
+
 		// Verify the signature using RSA-PSS
 		err = rsa.VerifyPSS(publicKey, crypto.SHA384, hashed, signatureBytes, nil)
 		isValid = err == nil
@@ -308,18 +308,18 @@ func Verify(secret string, token string, options ...*VerifyOptions) (header *Hea
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to parse RSA public key: %v", err)
 		}
-		
+
 		// Decode the signature
 		signatureBytes, err := base64.RawURLEncoding.DecodeString(signatureX)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to decode signature: %v", err)
 		}
-		
+
 		// Create hash of the message
 		hasher := sha512.New()
 		hasher.Write([]byte(fmt.Sprintf("%s.%s", headerBase64, payloadBase64)))
 		hashed := hasher.Sum(nil)
-		
+
 		// Verify the signature using RSA-PSS
 		err = rsa.VerifyPSS(publicKey, crypto.SHA512, hashed, signatureBytes, nil)
 		isValid = err == nil

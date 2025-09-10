@@ -1,6 +1,6 @@
 module github.com/go-zoox/jwt
 
-go 1.18
+go 1.20
 
 require (
 	github.com/go-zoox/core-utils v1.2.10

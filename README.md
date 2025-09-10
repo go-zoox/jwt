@@ -4,11 +4,14 @@ A comprehensive Go library for creating, signing, and verifying JSON Web Tokens 
 
 ## 🚀 Features
 
-- **Multiple Algorithm Support**: HMAC, RSA, and ECDSA algorithms
+- **Multiple Algorithm Support**: HMAC, RSA, ECDSA, and RSA-PSS algorithms
 - **Easy to Use**: Simple API for signing and verification
 - **Flexible Configuration**: Customizable options for claims and timestamps
 - **Comprehensive Testing**: Full test coverage for all algorithms
 - **Production Ready**: Used in production environments
+- **Performance Optimized**: Key caching, object pooling, and algorithm registry
+- **Builder Pattern**: Fluent interface for easy JWT construction
+- **Custom Error Types**: Detailed error handling with context
 
 ## 📦 Installation
 
@@ -233,6 +236,47 @@ fmt.Println("Type:", header.Type)
 fmt.Println("User ID:", payload.Get("user_id").Int64())
 ```
 
+### Builder Pattern
+
+```go
+// Fluent interface for building JWTs
+token, err := BuildHS256("secret-key").
+    WithIssuer("my-app").
+    WithSubject("user123").
+    WithAudience("my-api").
+    WithExpiresIn(24*time.Hour).
+    WithIssuedNow().
+    BuildAndSign(payload)
+
+// Or build the JWT instance first
+jwt := BuildRS256(privateKey).
+    WithIssuer("my-app").
+    WithExpiresIn(3600).
+    Build()
+
+token, err := jwt.Sign(payload)
+```
+
+### Custom Error Handling
+
+```go
+token, err := jwt.Sign(payload)
+if err != nil {
+    if jwtErr, ok := err.(*jwt.JWTError); ok {
+        switch jwtErr.Type {
+        case jwt.ErrTypeInvalidKey:
+            log.Printf("Invalid key: %s", jwtErr.Message)
+        case jwt.ErrTypeExpiredToken:
+            log.Printf("Token expired: %s", jwtErr.Message)
+        case jwt.ErrTypeUnsupportedAlg:
+            log.Printf("Unsupported algorithm: %s", jwtErr.Message)
+        default:
+            log.Printf("JWT error: %s", jwtErr.Message)
+        }
+    }
+}
+```
+
 ## 🔒 Security Best Practices
 
 ### Key Management
@@ -287,6 +331,8 @@ go test -v -run "TestPS.*"
 
 ## 📊 Performance
 
+### Benchmarks
+
 | Algorithm | Sign (ops/sec) | Verify (ops/sec) | Key Size |
 |-----------|----------------|------------------|----------|
 | HS256     | ~50,000        | ~50,000          | 256-bit  |
@@ -295,6 +341,21 @@ go test -v -run "TestPS.*"
 | PS256     | ~800           | ~4,000           | 2048-bit |
 
 *Benchmarks on Intel i7-8700K, Go 1.21*
+
+### Performance Optimizations
+
+- **Key Caching**: Parsed cryptographic keys are cached to avoid repeated parsing
+- **Object Pooling**: Hash functions are pooled to reduce memory allocations
+- **Algorithm Registry**: Centralized algorithm management for better performance
+- **Constant Time Comparison**: Prevents timing attacks on signature verification
+
+```bash
+# Run benchmarks
+go test -bench=BenchmarkHS256Sign -benchmem
+go test -bench=BenchmarkRS256Sign -benchmem
+go test -bench=BenchmarkES256Sign -benchmem
+go test -bench=BenchmarkPS256Sign -benchmem
+```
 
 ## 🔧 Key Generation
 

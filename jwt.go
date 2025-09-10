@@ -213,5 +213,11 @@ func (j *jwt) SetAlgorithm(alg string) *jwt {
 
 // GetAlgorithm ...
 func (j *jwt) GetAlgorithm() string {
-	return j.header.Algorithm
+	if j.header != nil {
+		return j.header.Algorithm
+	}
+	if j.options != nil {
+		return j.options.Algorithm
+	}
+	return ""
 }
